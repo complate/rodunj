@@ -1,0 +1,4 @@
+root: true
+extends: fnd-jsx
+rules:
+    react/react-in-jsx-scope: off

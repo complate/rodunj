@@ -1,0 +1,35 @@
+{
+	"name": "rodunj",
+	"version": "0.0.0",
+	"description": "JSX precompiler for static HTML",
+	"author": "FND",
+	"license": "Apache-2.0",
+	"homepage": "https://github.com/complate/rodunj",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/complate/rodunj.git"
+	},
+	"bugs": {
+		"url": "https://github.com/complate/rodunj/issues"
+	},
+	"main": "src/index.js",
+	"scripts": {
+		"test": "npm run lint && npm run test:unit && npm run test:cli",
+		"test:unit": "mocha --opts test/unit/mocha.opts --require esm test/unit/test_*.js",
+		"test:cli": "./test/cli/run",
+		"lint": "eslint --cache --ext .js --ext .jsx src test && echo ✓"
+	},
+	"dependencies": {
+		"estree-walker": "^0.6.1",
+		"magic-string": "^0.25.3",
+		"rollup": "^1.20.3",
+		"rollup-plugin-commonjs": "^10.1.0",
+		"rollup-plugin-node-resolve": "^5.2.0",
+		"rollup-pluginutils": "^2.8.1"
+	},
+	"devDependencies": {
+		"eslint-config-fnd-jsx": "^1.8.0",
+		"esm": "^3.2.25",
+		"mocha": "^6.2.0"
+	}
+}

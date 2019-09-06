@@ -1,0 +1,19 @@
+import rodunj from "../../src/index.js";
+import commonjs from "rollup-plugin-commonjs";
+import resolve from "rollup-plugin-node-resolve";
+import jsx from "acorn-jsx";
+
+export default {
+	input: "%INPUT%",
+	output: {
+		file: "../../dist/test_bundle.js",
+		format: "esm",
+		sourcemap: false
+	},
+	plugins: [
+		rodunj,
+		resolve({ extensions: [".js", ".jsx"] }),
+		commonjs({ include: "../../node_modules/**" })
+	],
+	acornInjectPlugins: [jsx()]
+};

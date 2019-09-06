@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+
+set -eu
+
+realpath() {
+	filepath="${1:?}"
+
+	node -r fs -p "fs.realpathSync(process.argv[1]);" "$filepath"
+}
+
+tests_root=`dirname "$0"`
+tests_root=`realpath "$tests_root"`
+root_dir=`realpath "$tests_root/../../"`
+config_file="$tests_root/rollup.config.js"
+
+selected_test="${1:-""}"
+
+quit() {
+	rm "$config_file"
+}
+trap quit EXIT
+
+run_all() {
+	for test_dir in test_*; do
+		run_one "$test_dir"
+	done
+}
+
+run_one() {
+	test_dir="${1:?}"
+
+	echo; echo "== `basename "$test_dir"` =="
+
+	filepath="$test_dir/index.jsx"
+	if [ ! -f "$filepath" ]; then
+		filepath="$test_dir/index.js"
+	fi
+	compile "$filepath"
+	assert_identical "$root_dir/dist/test_bundle.js" "$test_dir/expected.js"
+}
+
+compile() {
+	filepath="${1:?}"
+
+	sed "s|%INPUT%|$filepath|" < "$tests_root/rollup.template" > "$config_file"
+	rollup -c "$config_file"
+}
+
+assert_identical() {
+	actual="${1:?}"
+	expected="${2:?}"
+
+	# NB: `git diff` provides colorization (dependent on configuration)
+	git diff --no-index "$expected" "$actual" || \
+			fail "files \``relpath "$actual"`\` and" \
+					"\``relpath "$expected"`\` are not identical"
+}
+
+fail() {
+	msg="${1:?}"
+	shift
+
+	echo; echo "FAILURE: $msg $@"
+	false
+}
+
+relpath() {
+	filepath="${1:?}"
+
+	node -r path -p "path.relative(...process.argv.slice(1))" "$tests_root" "$filepath"
+}
+
+export PATH="$root_dir/node_modules/.bin:$PATH"
+cd "$tests_root"
+if [ -n "$selected_test" ]; then
+	run_one "$selected_test"
+else
+	run_all
+fi
