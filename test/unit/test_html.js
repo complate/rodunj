@@ -46,6 +46,18 @@ test("HTML encoding", function() {
 	// TODO: attributes
 });
 
+test("simple expression", function() {
+	verify("<h1>{title}</h1>", this);
+});
+
+test.skip("scoped expression", function() {
+	verify(`<ul>
+	{items.map(item => (
+		<li>{item}</li>
+	))}
+</ul>`, this);
+});
+
 function verify(code, { test }) {
 	let ast = parse(code, __filename);
 	assertSame(transform(code, ast), EXPECTED.get(test.title));
@@ -55,26 +67,26 @@ function verify(code, { test }) {
 void function() { // expectations scope
 
 // EXPECTED: empty element
-["<div>", "</div>"]
+[raw("<div>"), raw("</div>")]
 
 // EXPECTED: self-closing tag
-["<div></div>"]
+[raw("<div></div>")]
 
 // EXPECTED: nested element
-["<article>", "\n\t", "<h3>", "hello world", "</h3>", "\n", "</article>"]
+[raw("<article>"), raw("\n\t"), raw("<h3>"), raw("hello world"), raw("</h3>"), raw("\n"), raw("</article>")]
 
 // EXPECTED: nested self-closing tag
-["<section>", "\n\t", "<ul></ul>", "\n", "</section>"]
+[raw("<section>"), raw("\n\t"), raw("<ul></ul>"), raw("\n"), raw("</section>")]
 
 // EXPECTED: HTML encoding
-["<p>", "lorem &amp; ipsum", "</p>"]
+[raw("<p>"), raw("lorem &amp; ipsum"), raw("</p>")]
 
 // EXPECTED: simple expression
-["<h1>", title, "</h1>"]
+[raw("<h1>"), title, raw("</h1>")]
 
 // EXPECTED: scoped expression
-["<ul>", "\n\t", items.map(item => (
+[raw("<ul>"), raw("\n\t"), items.map(item => (
 		["<li>", item, "</li>"]
-	)), "\n", "</ul>"]
+	)), raw("\n"), raw("</ul>")]
 
 }

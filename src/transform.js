@@ -59,7 +59,7 @@ function JSXOpeningElement(state, node, parent) {
 
 	let { selfClosing } = node;
 	let code = (selfClosing && !isVoid) ? `${tag}</${tagName}>` : tag;
-	code = JSON.stringify(code) + ", ";
+	code = "raw(" + JSON.stringify(code) + "), ";
 	if(isSubtree(parent)) {
 		code = "[" + code;
 	}
@@ -79,7 +79,7 @@ function JSXClosingElement(state, node, parent) {
 		throw new Error(`void elements must not have a closing tag: \`${tag}\``);
 	}
 
-	let code = JSON.stringify(tag);
+	let code = "raw(" + JSON.stringify(tag) + ")";
 	code += isSubtree(parent) ? "]" : ", ";
 	state.code.overwrite(node.start, node.end, code);
 	console.error(tag);
@@ -99,7 +99,7 @@ function JSXExpressionContainer(state, node) {
 
 function JSXText(state, node) {
 	let txt = htmlEncode(node.value);
-	state.code.overwrite(node.start, node.end, JSON.stringify(txt) + ", ");
+	state.code.overwrite(node.start, node.end, "raw(" + JSON.stringify(txt) + "), ");
 }
 
 function isSubtree(parent) {
