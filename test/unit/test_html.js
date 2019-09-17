@@ -1,92 +1,38 @@
-/* global suite, test, before */
-"use strict";
+/* global test */
+import { makeSuite } from "./util";
+import { throws as assertThrows } from "assert";
 
-import transform from "../../src/transform";
-import { parse, extractExpectations } from "./util";
-import { strictEqual as assertSame } from "assert";
+let { assertAST, transform } = makeSuite("HTML", __filename);
 
-let EXPECTED;
-
-before(async () => {
-	EXPECTED = await extractExpectations(__filename);
+test("void elements", () => {
+	assertAST("<input />", "void element");
+	assertAST("<input></input>", "void element");
+	assertAST('<meta charset="utf-8" />', "attribute in void element");
+	assertThrows(() => transform("<input> </input>"),
+			/void elements must not have children: `<input>`/);
+	assertThrows(() => transform("<meta><span /></meta>"),
+			/void elements must not have children: `<meta>`/);
 });
 
-suite("HTML elements");
-
-test("empty element", function() {
-	verify("<div></div>", this);
+test("HTML encoding", () => {
+	assertAST("<p>lorem & ipsum</p>", "HTML encoding");
+	assertAST(`<div id="don't">foo -> bar</div>`, // eslint-disable-line quotes
+			"HTML attribute encoding");
 });
-
-test.skip("self-closing tag", function() {
-	verify("<div />", this);
-	verify("<div/>", this);
-});
-
-test("nested element", function() {
-	verify(`<article>
-	<h3>hello world</h3>
-</article>`, this);
-});
-
-test("nested self-closing tag", function() {
-	verify(`<section>
-	<ul />
-</section>`, this);
-});
-
-test.skip("void elements", function() {
-	// TODO:
-	// * rendering
-	// * validation: children
-	// * validation: closing tag
-});
-
-test("HTML encoding", function() {
-	verify("<p>lorem & ipsum</p>", this);
-	// TODO: attributes
-});
-
-test("simple expression", function() {
-	verify("<h1>{title}</h1>", this);
-});
-
-test.skip("scoped expression", function() {
-	verify(`<ul>
-	{items.map(item => (
-		<li>{item}</li>
-	))}
-</ul>`, this);
-});
-
-function verify(code, { test }) {
-	let ast = parse(code, __filename);
-	assertSame(transform(code, ast), EXPECTED.get(test.title));
-}
 
 /* eslint-disable */
 void function() { // expectations scope
 
-// EXPECTED: empty element
-[raw("<div>"), raw("</div>")]
+// EXPECTED: void element
+[{ _html: "<input>" }];
 
-// EXPECTED: self-closing tag
-[raw("<div></div>")]
-
-// EXPECTED: nested element
-[raw("<article>"), raw("\n\t"), raw("<h3>"), raw("hello world"), raw("</h3>"), raw("\n"), raw("</article>")]
-
-// EXPECTED: nested self-closing tag
-[raw("<section>"), raw("\n\t"), raw("<ul></ul>"), raw("\n"), raw("</section>")]
+// EXPECTED: attribute in void element
+[{ _html: "<meta charset=\"utf-8\">" }];
 
 // EXPECTED: HTML encoding
-[raw("<p>"), raw("lorem &amp; ipsum"), raw("</p>")]
+[{ _html: "<p>lorem &amp; ipsum</p>" }];
 
-// EXPECTED: simple expression
-[raw("<h1>"), title, raw("</h1>")]
-
-// EXPECTED: scoped expression
-[raw("<ul>"), raw("\n\t"), items.map(item => (
-		["<li>", item, "</li>"]
-	)), raw("\n"), raw("</ul>")]
+// EXPECTED: HTML attribute encoding
+[{ _html: "<div id=\"don&#x27;t\">foo -&gt; bar</div>" }];
 
 }

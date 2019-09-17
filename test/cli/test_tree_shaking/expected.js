@@ -1,7 +1,11 @@
 function Placeholder() {
-	return ["<hr>"];
+	return [{ _html: "<hr>" }];
 }
 
-var index = ["<div>", "\n\t", Placeholder(), "\n", "</div>"];
+var index = [
+	{ _html: "<div>\n\t" },
+	Placeholder(),
+	{ _html: "\n</div>" }
+];
 
 export default index;

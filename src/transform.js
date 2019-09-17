@@ -1,116 +1,249 @@
 import { htmlEncode, VOID_ELEMENTS } from "./html";
+import { $spread, $invocation, $array, $object, $property, $literal } from "./ast";
+import { generate } from "escodegen"; // TODO: switch to https://github.com/davidbonnet/astring?
 import { walk } from "estree-walker";
-import MagicString from "magic-string";
 
-let visitors = {
+let RAW = "_html";
+// TODO: optimize recurring tokens in output
+let SPACE = raw(" ");
+let CLOSE = raw(">");
+
+// TODO: configurable
+let FORMAT = {
+	indent: {
+		style: "\t"
+	},
+	quotes: "double"
+};
+
+let VISITORS = {
 	JSXElement,
-	JSXOpeningElement,
-	JSXClosingElement,
+	JSXFragment,
 	JSXExpressionContainer,
 	JSXText
 };
 
-export default function transformAll(code, ast) {
-	code = new MagicString(code);
-	// traverse each root-level JSX element independently
-	walk(ast, {
-		enter(node, ...args) {
-			if(node.type !== "JSXElement") {
-				return;
-			}
-
-			transformTree(node, code);
-			this.skip();
-		}
-	});
-	return code.toString();
-}
-
-function transformTree(root, code) {
-	let state = { code };
-	walk(root, {
-		enter(node, ...args) {
-			let handler = visitors[node.type];
+export default function transform(code, ast) {
+	let queue = [];
+	ast = walk(ast, {
+		enter(node, parent) {
+			let handler = VISITORS[node.type];
 			if(handler) {
-				handler(state, node, ...args);
+				handler.call(this, { queue }, node, parent);
 			}
 		}
 	});
+	// rewrite queued elements in reverse order
+	for(let i = queue.length - 1; i >= 0; i--) {
+		let el = queue[i];
+		if(el.type === "CallExpression") { // macro invocation
+			continue;
+		}
+
+		let { openingElement } = el;
+		let repl = openingElement === false ? $array(...el.children) : // fragment
+			$array(...openingElement, ...el.children, el.closingElement);
+		rewriteNode(el, repl);
+	}
+
+	queue.forEach(node => {
+		if(node.type === "ArrayExpression") {
+			optimizeAdjacent(node.elements);
+		} else { // macro invocation
+			let args = node.arguments;
+			let children = args.slice(1);
+			children = optimizeAdjacent(children);
+			node.arguments = args.slice(0, 1).concat(children);
+		}
+	});
+	return generate(ast, { format: FORMAT });
 }
 
 function JSXElement(state, node, parent) {
-	if(parent) {
-		node._parent = parent; // XXX: hacky?
-	}
-}
-
-function JSXOpeningElement(state, node, parent) {
-	let tagName = htmlTag(node);
-	if(!tagName) {
+	let { openingElement } = node;
+	let tag = openingElement.name.name;
+	if(tag === "Fragment") {
+		JSXFragment(state, node, parent);
 		return;
 	}
 
-	let tag = `<${tagName}>`;
-	let isVoid = VOID_ELEMENTS.has(tagName);
-	let { children } = node;
-	if(children && children.length && isVoid) {
-		throw new Error(`void elements must not have children: \`${tag}\``);
-	}
-
-	let { selfClosing } = node;
-	let code = (selfClosing && !isVoid) ? `${tag}</${tagName}>` : tag;
-	code = "raw(" + JSON.stringify(code) + "), ";
-	if(isSubtree(parent)) {
-		code = "[" + code;
-	}
-	state.code.overwrite(node.start, node.end, code);
-	console.error(tag.padEnd(13));
-}
-
-function JSXClosingElement(state, node, parent) {
-	let tagName = htmlTag(node);
-	if(!tagName) {
+	let tagName = /^[a-z]/.test(tag) && tag;
+	if(!tagName) { // macro
+		transformMacro.call(this, { ...state, tag }, node);
 		return;
 	}
 
-	let tag = `</${tagName}>`;
+	let { attributes } = openingElement;
+	// FIXME: attribute expressions must be wrapped in an object (cf. `raw`) to
+	//        ensure HTML encoding at runtime
+	attributes = attributes.flatMap(transformAttribute);
+
+	let startTag = attributes.length === 0 ? [raw(`<${tagName}>`)] :
+		optimizeAdjacent([raw(`<${tagName}`), ...attributes, CLOSE]);
 	let isVoid = VOID_ELEMENTS.has(tagName);
 	if(isVoid) {
-		throw new Error(`void elements must not have a closing tag: \`${tag}\``);
+		let { children } = node;
+		if(children && children.length) {
+			throw new Error(`void elements must not have children: \`<${tagName}>\``);
+		}
+		this.replace($array(...startTag));
+		return;
 	}
 
-	let code = "raw(" + JSON.stringify(tag) + ")";
-	code += isSubtree(parent) ? "]" : ", ";
-	state.code.overwrite(node.start, node.end, code);
-	console.error(tag);
-}
-
-function JSXExpressionContainer(state, node) {
-	let { start, end } = node;
-	let { code } = state;
-	let sub = code.slice(start, end);
-	if(!sub.startsWith("{") || !sub.endsWith("}")) { // XXX: gratuitous paranoia?
-		throw new Error(`unrecognized expression \`${sub}\` at ${start}:${end}`);
+	let endTag = raw(`</${tagName}>`);
+	if(openingElement.selfClosing || node.children.length === 0) {
+		let nodes = optimizeAdjacent([...startTag, endTag]);
+		this.replace($array(...nodes));
+		return;
 	}
-	// TODO: replace braces with parentheses, to be safe?
-	code.remove(start, start + 1).
-		overwrite(end - 1, end, ", ");
+
+	// queue for rewriting later, otherwise child nodes would never be processed
+	// because estree-walker visits them only after `JSXElement`,
+	// `JSXOpeningElement` and `JSXClosingElement` have been processed
+	// XXX: inefficient, smelly
+	Object.assign(node, { // XXX: hacky
+		openingElement: startTag,
+		closingElement: endTag
+	});
+	state.queue.push(node);
 }
 
-function JSXText(state, node) {
+function JSXFragment(state, node, parent) {
+	Object.assign(node, { // XXX: hacky
+		openingElement: false
+	});
+	state.queue.push(node);
+}
+
+function JSXText(state, node, parent) {
 	let txt = htmlEncode(node.value);
-	state.code.overwrite(node.start, node.end, "raw(" + JSON.stringify(txt) + "), ");
+	this.replace(raw(txt));
 }
 
-function isSubtree(parent) {
-	let grandparent = parent._parent;
-	if(grandparent) {
-		return grandparent.type !== "JSXElement";
+function JSXExpressionContainer(state, node, parent) {
+	this.replace(node.expression);
+}
+
+function transformMacro(state, { openingElement, children }) {
+	let params = openingElement.attributes.map(transformMacroParam);
+	let { tag } = state;
+	if(children.length === 0) {
+		this.replace($array($invocation(tag, $object(params))));
+	} else {
+		let node = $invocation(tag, $object(params), ...children);
+		this.replace($array(node));
+		state.queue.push(node);
 	}
-	return true; // root
 }
 
-function htmlTag(node) {
-	let tagName = node.name.name;
-	return /^[a-z]/.test(tagName) && tagName;
+// XXX: partially duplicates `transformAttribute`
+function transformMacroParam(attr) {
+	if(attr.type === "JSXSpreadAttribute") {
+		return $spread(attr.argument.name);
+	}
+
+	let { name, value } = attr;
+	if(!name || name.type !== "JSXIdentifier") { // XXX: should never occur?
+		throw new Error(`unexpected parameter: \`${name ? name.type : attr}\``);
+	}
+	if(value === null) { // boolean parameter
+		value = { type: true }; // XXX: hacky
+	}
+
+	switch(value.type) {
+	case "Literal":
+		value = $literal(value.value);
+		break;
+	case "JSXExpressionContainer":
+		value = value.expression;
+		break;
+	case true: // boolean; see above
+		value = $literal(true);
+		break;
+	default:
+		throw new Error(`unexpected attribute value: \`${value.type}\``);
+	}
+	return $property(name.name, value);
+}
+
+function transformAttribute(attr) {
+	if(attr.type === "JSXSpreadAttribute") {
+		return [SPACE, attr.argument];
+	}
+
+	let { name, value } = attr;
+	if(!name || name.type !== "JSXIdentifier") { // XXX: should never occur?
+		throw new Error(`unexpected attribute: \`${name ? name.type : attr}\``);
+	}
+
+	let prefix = ` ${name.name}=`; // TODO: `htmlEncode`?
+	switch(value.type) {
+	case "Literal":
+		return [raw(`${prefix}"${htmlEncode(value.value, true)}"`)];
+	case "JSXExpressionContainer":
+		return [raw(prefix), value.expression];
+	default:
+		throw new Error(`unexpected attribute value: \`${value.type}\``);
+	}
+}
+
+function flatten(arrayExpression) {
+	return arrayExpression.elements.reduce((memo, node) => {
+		if(node.type !== "ArrayExpression") {
+			return memo.concat(node);
+		}
+		return memo.concat(flatten(node));
+	}, []);
+}
+
+// optimize by flattening arrays and combining adjacent HTML
+// NB: mutates original array and objects within
+// XXX: complex and inefficient; should be done directly upon rewriting nodes
+function optimizeAdjacent(nodes) {
+	nodes.splice(0, nodes.length, ...flatten({ elements: nodes }));
+
+	for(let i = nodes.length - 1; i > 0; i--) {
+		let prev = nodes[i - 1];
+		let prevHTML = prev && rawUpdate(prev);
+		if(prevHTML === false) {
+			continue;
+		}
+
+		let curr = nodes[i];
+		let currHTML = curr && rawUpdate(curr);
+		if(currHTML === false) {
+			continue;
+		}
+
+		rawUpdate(prev, prevHTML + currHTML);
+		nodes.splice(i, 1);
+	}
+	return nodes;
+}
+
+// XXX: crude; should use estree-walker's `#replace` instead
+function rewriteNode(node, props) {
+	Object.keys(node).forEach(key => {
+		delete node[key];
+	});
+	Object.assign(node, props);
+}
+
+function raw(html) {
+	return $object({
+		[RAW]: $literal(html) // FIXME: simplistic and unsafe?
+	});
+}
+
+function rawUpdate(node, html) { // TODO: rename
+	let prop = node.type === "ObjectExpression" && node.properties[0];
+	if(!prop || prop.key.name !== RAW) {
+		return false;
+	}
+	if(html === undefined) {
+		return prop.value.value;
+	}
+	prop.value.value = html;
+	prop.value.raw = JSON.stringify(html);
+	return true;
 }

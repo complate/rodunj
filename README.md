@@ -1,8 +1,8 @@
 [Rodunj](https://de.wikipedia.org/wiki/Rodung) /rəʊduŋ/
 =======================================================
 
-flattens [JSX](https://facebook.github.io/jsx/) tree structures by precompiling
-static HTML, reducing function invocations at runtime
+optimizes [JSX](https://facebook.github.io/jsx/) by precompiling static HTML,
+reducing cycles required at runtime
 
 ```jsx
 <Section title={caption}>
@@ -15,15 +15,22 @@ static HTML, reducing function invocations at runtime
 </Section>
 ```
 
-turns into
+is converted to plain JavaScript:
 
 ```javascript
-[Section({ title: caption }, [
-    '<dl class="glossary"><dt>', term, "</dt>",
-    definitions.map(desc => ["<dd>", desc, "</dd>"]),
-    "</dl>"
-])]
+[
+    Section({ title: caption },
+            '<dl class="glossary"> <dt>',
+            term,
+            "</dt>",
+            definitions.map(desc => [
+                "<dd>", desc, "</dd>"
+            ]),
+            "</dl>")
+]
 ```
+
+(approximation for readability)
 
 
 Contributing

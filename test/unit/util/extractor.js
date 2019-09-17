@@ -1,14 +1,9 @@
-let { reportError } = require("../../src/util");
-let acorn = require("acorn");
-let jsx = require("acorn-jsx");
-let fs = require("fs");
-let readline = require("readline");
-let assertDeep = require("assert").deepStrictEqual;
-
-let JSXParser = acorn.Parser.extend(jsx());
+import fs from "fs";
+import readline from "readline";
+import { deepStrictEqual as assertDeep } from "assert";
 
 // parses module to retrieve trailing expectation blocks
-export function extractExpectations(filepath) {
+export default function extractExpectations(filepath) {
 	let prefix = "// EXPECTED: ";
 	let rl = readline.createInterface({
 		input: fs.createReadStream(filepath, "utf8"),
@@ -58,15 +53,6 @@ export function extractExpectations(filepath) {
 		});
 	});
 }
-
-export function parse(code, context) {
-	try {
-		return JSXParser.parse(code);
-	} catch(err) {
-		reportError(err, context);
-	}
-}
-
 class StrictMap extends Map {
 	get(key) {
 		if(!this.has(key)) {
