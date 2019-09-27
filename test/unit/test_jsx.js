@@ -39,6 +39,14 @@ test("scoped expression", () => {
 </ul>`, "scoped expression");
 });
 
+test.skip("dynamic element tag", () => {
+	assertAST(`
+let headingLevel = 3;
+let Heading = "h" + headingLevel;
+
+[<Heading>{title}</Heading>`, "dynamic element tag");
+});
+
 test("fragments", () => {
 	assertAST("<Fragment>lorem ipsum</Fragment>", "fragment");
 	assertAST("<>lorem ipsum</>", "fragment");
@@ -100,6 +108,9 @@ void function() { // expectations scope
 	]),
 	{ _html: "\n</ul>" }
 ];
+
+// EXPECTED: dynamic element tag
+[];
 
 // EXPECTED: fragment
 [{ _html: "lorem ipsum" }];

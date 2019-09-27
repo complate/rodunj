@@ -1,6 +1,5 @@
-// XXX: duplicates complate-stream (module ES5) ⇒ extract into separate package
-
 // cf. https://www.w3.org/TR/html5/syntax.html#void-elements
+// XXX: only needed in compilation step ⇒ module relies on tree shaking
 export let VOID_ELEMENTS = new Set([
 	"area", "base", "br", "col", "embed", "hr", "img", "input", "keygen",
 	"link", "meta", "param", "source", "track", "wbr"
