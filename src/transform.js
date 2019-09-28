@@ -4,9 +4,6 @@ import { generate } from "escodegen"; // TODO: switch to https://github.com/davi
 import { walk } from "estree-walker";
 
 let RAW = "_html";
-// TODO: optimize recurring tokens in output
-let SPACE = raw(" ");
-let CLOSE = raw(">");
 
 // TODO: configurable
 let FORMAT = {
@@ -79,7 +76,7 @@ function JSXElement(state, node, parent) {
 	attributes = attributes.flatMap(transformAttribute);
 
 	let startTag = attributes.length === 0 ? [raw(`<${tagName}>`)] :
-		optimizeAdjacent([raw(`<${tagName}`), ...attributes, CLOSE]);
+		optimizeAdjacent([raw(`<${tagName}`), ...attributes, raw(">")]);
 	let isVoid = VOID_ELEMENTS.has(tagName);
 	if(isVoid) {
 		let { children } = node;
@@ -168,7 +165,7 @@ function transformMacroParam(attr) {
 
 function transformAttribute(attr) {
 	if(attr.type === "JSXSpreadAttribute") {
-		return [SPACE, attr.argument];
+		return [raw(" "), attr.argument];
 	}
 
 	let { name, value } = attr;
@@ -199,6 +196,7 @@ function flatten(arrayExpression) {
 // optimize by flattening arrays and combining adjacent HTML
 // NB: mutates original array and objects within
 // XXX: complex and inefficient; should be done directly upon rewriting nodes
+// TODO: optimize recurring tokens (notably raw `<`, `</`, `>` and space)
 function optimizeAdjacent(nodes) {
 	nodes.splice(0, nodes.length, ...flatten({ elements: nodes }));
 
