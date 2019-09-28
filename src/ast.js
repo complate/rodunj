@@ -15,6 +15,11 @@ export let $invocation = (functionName, ...args) => ({
 	arguments: args
 });
 
+export let $identifier = name => ({
+	type: "Identifier",
+	name
+});
+
 export let $array = (...elements) => ({
 	type: "ArrayExpression",
 	elements

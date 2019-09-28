@@ -39,12 +39,15 @@ test("scoped expression", () => {
 </ul>`, "scoped expression");
 });
 
-test.skip("dynamic element tag", () => {
+test("dynamic element tags", () => {
 	assertAST(`
-let headingLevel = 3;
-let Heading = "h" + headingLevel;
+let $Heading = "h" + headingLevel;
 
-[<Heading>{title}</Heading>`, "dynamic element tag");
+<$Heading>{title}</$Heading>`, "dynamic heading level");
+	assertAST(`
+let $List = ordered ? "ol" : "ul";
+
+<$List />`, "dynamic list type");
 });
 
 test("fragments", () => {
@@ -109,8 +112,27 @@ void function() { // expectations scope
 	{ _html: "\n</ul>" }
 ];
 
-// EXPECTED: dynamic element tag
-[];
+// EXPECTED: dynamic heading level
+let $Heading = "h" + headingLevel;
+[
+	{ _html: "<" },
+	$Heading,
+	{ _html: ">" },
+	title,
+	{ _html: "</" },
+	$Heading,
+	{ _html: ">" }
+];
+
+// EXPECTED: dynamic list type
+let $List = ordered ? "ol" : "ul";
+[
+	{ _html: "<" },
+	$List,
+	{ _html: "></" },
+	$List,
+	{ _html: ">" }
+];
 
 // EXPECTED: fragment
 [{ _html: "lorem ipsum" }];

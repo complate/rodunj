@@ -1,5 +1,5 @@
 import { htmlEncode, VOID_ELEMENTS } from "./html";
-import { $spread, $invocation, $array, $object, $property, $literal } from "./ast";
+import { $spread, $invocation, $identifier, $array, $object, $property, $literal } from "./ast";
 import { generate } from "escodegen"; // TODO: switch to https://github.com/davidbonnet/astring?
 import { walk } from "estree-walker";
 
@@ -39,7 +39,7 @@ export default function transform(code, ast) {
 
 		let { openingElement } = el;
 		let repl = openingElement === false ? $array(...el.children) : // fragment
-			$array(...openingElement, ...el.children, el.closingElement);
+			$array(...openingElement, ...el.children, ...el.closingElement);
 		rewriteNode(el, repl);
 	}
 
@@ -65,9 +65,14 @@ function JSXElement(state, node, parent) {
 	}
 
 	let tagName = /^[a-z]/.test(tag) && tag;
-	if(!tagName) { // macro
-		transformMacro.call(this, { ...state, tag }, node);
-		return;
+	if(!tagName) { // macro or dynamic tag
+		if(!tag.startsWith("$")) {
+			transformMacro.call(this, { ...state, tag }, node);
+			return;
+		}
+
+		tagName = tag;
+		var dynamicTag = true; // eslint-disable-line no-var
 	}
 
 	let { attributes } = openingElement;
@@ -75,9 +80,13 @@ function JSXElement(state, node, parent) {
 	//        ensure HTML encoding at runtime
 	attributes = attributes.flatMap(transformAttribute);
 
-	let startTag = attributes.length === 0 ? [raw(`<${tagName}>`)] :
-		optimizeAdjacent([raw(`<${tagName}`), ...attributes, raw(">")]);
-	let isVoid = VOID_ELEMENTS.has(tagName);
+	let startTag = optimizeAdjacent([
+		raw("<"),
+		dynamicTag ? $identifier(tagName) : raw(tagName),
+		...attributes,
+		raw(">")
+	]);
+	let isVoid = VOID_ELEMENTS.has(tagName); // XXX: does not work for dynamic tags
 	if(isVoid) {
 		let { children } = node;
 		if(children && children.length) {
@@ -87,9 +96,10 @@ function JSXElement(state, node, parent) {
 		return;
 	}
 
-	let endTag = raw(`</${tagName}>`);
+	let endTag = dynamicTag ? [raw("</"), $identifier(tagName), raw(">")] :
+		[raw(`</${tagName}>`)];
 	if(openingElement.selfClosing || node.children.length === 0) {
-		let nodes = optimizeAdjacent([...startTag, endTag]);
+		let nodes = optimizeAdjacent([...startTag, ...endTag]);
 		this.replace($array(...nodes));
 		return;
 	}
