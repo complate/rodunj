@@ -4,6 +4,8 @@ import { generate } from "escodegen"; // TODO: switch to https://github.com/davi
 import { walk } from "estree-walker";
 
 let RAW = "_html";
+let ATTR = "_attr";
+let ATTRIBS = "_attribs";
 
 // TODO: configurable
 let FORMAT = {
@@ -76,8 +78,6 @@ function JSXElement(state, node, parent) {
 	}
 
 	let { attributes } = openingElement;
-	// FIXME: attribute expressions must be wrapped in an object (cf. `raw`) to
-	//        ensure HTML encoding at runtime
 	attributes = attributes.flatMap(transformAttribute);
 
 	let startTag = optimizeAdjacent([
@@ -175,7 +175,7 @@ function transformMacroParam(attr) {
 
 function transformAttribute(attr) {
 	if(attr.type === "JSXSpreadAttribute") {
-		return [raw(" "), attr.argument];
+		return [raw(" "), dynamicAttribute(attr.argument, true)];
 	}
 
 	let { name, value } = attr;
@@ -183,12 +183,19 @@ function transformAttribute(attr) {
 		throw new Error(`unexpected attribute: \`${name ? name.type : attr}\``);
 	}
 
-	let prefix = ` ${name.name}=`; // TODO: `htmlEncode`?
+	let key = name.name;
+	let prefix = ` ${key}`; // TODO: `htmlEncode`?
+	if(value === null) { // boolean attribute
+		return [raw(prefix)];
+	}
+
 	switch(value.type) {
 	case "Literal":
-		return [raw(`${prefix}"${htmlEncode(value.value, true)}"`)];
+		return [raw(`${prefix}="${htmlEncode(value.value, true)}"`)];
 	case "JSXExpressionContainer":
-		return [raw(prefix), value.expression];
+		return [raw(" "), dynamicAttribute($object({
+			[key]: value.expression
+		}))];
 	default:
 		throw new Error(`unexpected attribute value: \`${value.type}\``);
 	}
@@ -237,9 +244,16 @@ function rewriteNode(node, props) {
 	Object.assign(node, props);
 }
 
+function dynamicAttribute(expression, multiple) {
+	let key = multiple ? ATTRIBS : ATTR;
+	return $object({
+		[key]: expression
+	});
+}
+
 function raw(html) {
 	return $object({
-		[RAW]: $literal(html) // FIXME: simplistic and unsafe?
+		[RAW]: $literal(html)
 	});
 }
 

@@ -82,15 +82,15 @@ void function() { // expectations scope
 
 // EXPECTED: complex parameters
 [
-	{ _html: "<span id=" },
-	`item${ 4 * 8 }`,
+	{ _html: "<span " },
+	{ _attr: { id: `item${ 4 * 8 }` } },
 	{ _html: " class=\"dummy\"></span>" }
 ];
 
 // EXPECTED: spread parameters
 [
 	{ _html: "<span class=\"dummy\" " },
-	params,
+	{ _attribs: params },
 	{ _html: "></span>" }
 ];
 

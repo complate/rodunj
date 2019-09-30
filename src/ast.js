@@ -38,7 +38,7 @@ export let $property = (key, value) => ({
 	method: false,
 	shorthand: false,
 	computed: false,
-	key: {
+	key: /[^0-9a-zA-z_]/.test(key) ? $literal(key) : { // XXX: simplistic
 		type: "Identifier",
 		name: key
 	},
