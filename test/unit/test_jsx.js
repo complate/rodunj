@@ -9,10 +9,12 @@ test("empty element", () => {
 	assertAST("<div/>", "empty element");
 });
 
-test("nested element", () => {
+test("nested elements", () => {
 	assertAST(`<article>
-	<h3>hello world</h3>
-</article>`, "nested element");
+	<header {...attribs}>
+		<h3>hello world</h3>
+	</header>
+</article>`, "nested elements");
 
 	assertAST(`<section>
 	<ul />
@@ -71,8 +73,12 @@ void function() { // expectations scope
 // EXPECTED: empty element
 [{ _html: "<div></div>" }];
 
-// EXPECTED: nested element
-[{ _html: "<article>\n\t<h3>hello world</h3>\n</article>" }];
+// EXPECTED: nested elements
+[
+	{ _html: "<article>\n\t<header " },
+	{ _attribs: attribs },
+	{ _html: ">\n\t\t<h3>hello world</h3>\n\t</header>\n</article>" }
+];
 
 // EXPECTED: nested self-closing tag
 [{ _html: "<section>\n\t<ul></ul>\n</section>" }];

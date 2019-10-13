@@ -231,6 +231,7 @@ function optimizeAdjacent(nodes) {
 		}
 
 		rawUpdate(prev, prevHTML + currHTML);
+		rewriteNode(curr, {}); // invalidates references elsewhere -- XXX: hacky
 		nodes.splice(i, 1);
 	}
 	return nodes;
