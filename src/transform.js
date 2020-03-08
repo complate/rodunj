@@ -22,13 +22,15 @@ let VISITORS = {
 	JSXText
 };
 
-export default function transform(code, ast) {
+// if `options.nonStaticIDs` is `true`, ID attributes will _not_ be optimized in
+// order to allow for runtime verification (e.g. duplicate IDs)
+export default function transform(ast, options) {
 	let queue = [];
 	ast = walk(ast, {
 		enter(node, parent) {
 			let handler = VISITORS[node.type];
 			if(handler) {
-				handler.call(this, { queue }, node, parent);
+				handler.call(this, { queue }, node, parent, options);
 			}
 		}
 	});
@@ -58,7 +60,7 @@ export default function transform(code, ast) {
 	return generate(ast, { format: FORMAT });
 }
 
-function JSXElement(state, node, parent) {
+function JSXElement(state, node, parent, { nonStaticIDs } = {}) {
 	let { openingElement } = node;
 	let tag = openingElement.name.name;
 	if(tag === "Fragment") {
@@ -78,7 +80,7 @@ function JSXElement(state, node, parent) {
 	}
 
 	let { attributes } = openingElement;
-	attributes = attributes.flatMap(transformAttribute);
+	attributes = attributes.flatMap(attr => transformAttribute(attr, nonStaticIDs));
 
 	let startTag = optimizeAdjacent([
 		raw("<"),
@@ -173,7 +175,7 @@ function transformMacroParam(attr) {
 	return $property(name.name, value);
 }
 
-function transformAttribute(attr) {
+function transformAttribute(attr, nonStaticIDs) {
 	if(attr.type === "JSXSpreadAttribute") {
 		return [raw(" "), dynamicAttribute(attr.argument, true)];
 	}
@@ -191,6 +193,11 @@ function transformAttribute(attr) {
 
 	switch(value.type) {
 	case "Literal":
+		if(nonStaticIDs && key === "id") {
+			return [raw(" "), dynamicAttribute($object({
+				[key]: $literal(value.value)
+			}))];
+		}
 		return [raw(`${prefix}="${htmlEncode(value.value, true)}"`)];
 	case "JSXExpressionContainer":
 		return [raw(" "), dynamicAttribute($object({

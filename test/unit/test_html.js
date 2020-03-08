@@ -19,6 +19,8 @@ test("attributes", () => {
 			"hyphenated attributes");
 	assertAST("<input disabled={false} hidden={null} readonly={undefined} required />",
 			"boolean and blank attributes");
+	assertAST('<main id="main" />', "static ID attribute");
+	assertAST('<main id="main" />', "non-static ID attribute", { nonStaticIDs: true });
 });
 
 test("HTML encoding", () => {
@@ -52,6 +54,16 @@ void function() { // expectations scope
 	{ _html: " " },
 	{ _attr: { readonly: undefined } },
 	{ _html: " required>" }
+];
+
+// EXPECTED: static ID attribute
+[{ _html: "<main id=\"main\"></main>" }];
+
+// EXPECTED: non-static ID attribute
+[
+	{ _html: "<main " },
+	{ _attr: { id: "main" } },
+	{ _html: "></main>" }
 ];
 
 // EXPECTED: HTML encoding

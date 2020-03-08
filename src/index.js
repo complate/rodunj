@@ -16,6 +16,6 @@ export default {
 		} catch(err) {
 			reportError(err, id);
 		}
-		return transform(code, ast);
+		return transform(ast);
 	}
 };

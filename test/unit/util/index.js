@@ -16,13 +16,13 @@ export function makeSuite(title, filepath) {
 		EXPECTED = await extractExpectations(filepath);
 	});
 
-	let _transform = code => {
+	let _transform = (code, options) => {
 		let ast = parse(code, filepath);
-		return transform(code, ast);
+		return transform(ast, options);
 	};
 	return {
-		assertAST(code, snippet) {
-			assertSame(_transform(code), EXPECTED.get(snippet));
+		assertAST(jsx, snippet, options) {
+			assertSame(_transform(jsx, options), EXPECTED.get(snippet));
 		},
 		transform: _transform
 	};
