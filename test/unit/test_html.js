@@ -23,7 +23,7 @@ test("attributes", () => {
 
 test("HTML encoding", () => {
 	assertAST("<p>lorem & ipsum</p>", "HTML encoding");
-	assertAST(`<div id="don't">foo -> bar</div>`, // eslint-disable-line quotes
+	assertAST(`<div class="don't">foo -&gt; bar & baz</div>`, // eslint-disable-line quotes
 			"HTML attribute encoding");
 });
 
@@ -58,6 +58,6 @@ void function() { // expectations scope
 [{ _html: "<p>lorem &amp; ipsum</p>" }];
 
 // EXPECTED: HTML attribute encoding
-[{ _html: "<div id=\"don&#x27;t\">foo -&gt; bar</div>" }];
+[{ _html: "<div class=\"don&#x27;t\">foo -&gt; bar &amp; baz</div>" }];
 
 }
