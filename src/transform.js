@@ -66,6 +66,31 @@ function JSXElement(state, node, parent, { nonStaticIDs } = {}) {
 	if(tag === "Fragment") {
 		JSXFragment(state, node, parent);
 		return;
+	} else if(tag === "__UnsafeRaw") { // XXX: does not belong here
+		let html;
+		openingElement.attributes.some(({ name, value }) => {
+			if(name.name !== "html") {
+				throw new Error(`unsupported \`__UnsafeRaw\` attribute: \`${name.name}\``);
+			}
+
+			switch(value.type) {
+			case "Literal":
+				html = raw(value.value);
+				break;
+			case "JSXExpressionContainer":
+				html = raw(value.expression); // FIXME: this probably results in erronous combination with adjacent `__html` objects
+				break;
+			default:
+				throw new Error(`unsupported \`__UnsafeRaw\` attribute value: \`${value.type}\``);
+			}
+			return true;
+		});
+		Object.assign(node, { // XXX: hacky; relies on queue's `JSXFragment` handling
+			openingElement: false,
+			children: [html]
+		});
+		state.queue.push(node);
+		return;
 	}
 
 	let tagName = /^[a-z]/.test(tag) && tag;
