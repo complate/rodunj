@@ -66,6 +66,9 @@ function JSXElement(state, node, parent, { nonStaticIDs } = {}) {
 	if(tag === "Fragment") {
 		JSXFragment(state, node, parent);
 		return;
+	} else if(tag === "__UnsafeRaw") {
+		state.queue.push(transformUnsafeRaw(node));
+		return;
 	}
 
 	let tagName = /^[a-z]/.test(tag) && tag;
@@ -131,6 +134,32 @@ function JSXText(state, node, parent) {
 
 function JSXExpressionContainer(state, node, parent) {
 	this.replace(node.expression);
+}
+
+function transformUnsafeRaw(node) {
+	let html;
+	node.openingElement.attributes.some(({ name, value }) => {
+		if(name.name !== "html") {
+			throw new Error(`unsupported \`__UnsafeRaw\` attribute: \`${name.name}\``);
+		}
+
+		switch(value.type) {
+		case "Literal":
+			html = raw(value.value);
+			break;
+		case "JSXExpressionContainer":
+			html = raw(value.expression);
+			break;
+		default:
+			throw new Error(`unsupported \`__UnsafeRaw\` attribute value: \`${value.type}\``);
+		}
+		return true;
+	});
+	Object.assign(node, { // XXX: hacky; relies on queue's `JSXFragment` handling
+		openingElement: false,
+		children: [html]
+	});
+	return node;
 }
 
 function transformMacro(state, { openingElement, children }) {
@@ -261,13 +290,13 @@ function dynamicAttribute(expression, multiple) {
 
 function raw(html) {
 	return $object({
-		[RAW]: $literal(html)
+		[RAW]: html.substr ? $literal(html) : html // NB: supports expressions
 	});
 }
 
 function rawUpdate(node, html) { // TODO: rename
 	let prop = node.type === "ObjectExpression" && node.properties[0];
-	if(!prop || prop.key.name !== RAW) {
+	if(!prop || prop.key.name !== RAW || prop.value.type !== "Literal") {
 		return false;
 	}
 	if(html === undefined) {

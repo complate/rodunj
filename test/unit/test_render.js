@@ -81,3 +81,23 @@ test("HTML attributes", () => {
 	];
 	assertSame(renderToString(...segments), "<input  required>");
 });
+
+test("document-type declaration", () => {
+	let DOCTYPE = "<!DOCTYPE html>";
+	let Document = (_, ...children) => [
+		{ _html: DOCTYPE },
+		children
+	];
+	let List = () => [{ _html: "<ul></ul>" }];
+	let segments = [
+		Document({},
+				{ _html: "\n\t<body>\n\t\t<h1>Hello World</h1>\n\t\t" },
+				List(),
+				{ _html: "\n\t</body>\n" })
+	];
+	assertSame(renderToString(...segments), `<!DOCTYPE html>
+	<body>
+		<h1>Hello World</h1>
+		<ul></ul>
+	</body>\n`);
+});

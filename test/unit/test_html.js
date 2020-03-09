@@ -29,6 +29,18 @@ test("HTML encoding", () => {
 			"HTML attribute encoding");
 });
 
+test("raw HTML", () => {
+	assertAST(`
+<p>lorem <__UnsafeRaw html="foo <b>bar <i>baz</i> qux</b>" /> ipsum</p>
+	`, "raw HTML literal");
+
+	assertAST(`
+let html = "foo <b>bar <i>baz</i> qux</b>";
+
+<p>lorem <__UnsafeRaw html={html} /> ipsum</p>
+	`, "raw HTML expression");
+});
+
 /* eslint-disable */
 void function() { // expectations scope
 
@@ -71,5 +83,16 @@ void function() { // expectations scope
 
 // EXPECTED: HTML attribute encoding
 [{ _html: "<div class=\"don&#x27;t\">foo -&gt; bar &amp; baz</div>" }];
+
+// EXPECTED: raw HTML literal
+[{ _html: "<p>lorem foo <b>bar <i>baz</i> qux</b> ipsum</p>" }];
+
+// EXPECTED: raw HTML expression
+let html = "foo <b>bar <i>baz</i> qux</b>";
+[
+	{ _html: "<p>lorem " },
+	{ _html: html },
+	{ _html: " ipsum</p>" }
+];
 
 }
