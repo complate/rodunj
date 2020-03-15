@@ -16,22 +16,21 @@ export function makeSuite(title, filepath) {
 		EXPECTED = await extractExpectations(filepath);
 	});
 
-	let _transform = (code, options) => {
-		let ast = parse(code, filepath);
-		return transform(ast, options);
-	};
+	let _transform = (jsx, options) => transformCode(jsx, options, filepath);
 	return {
 		assertAST(jsx, snippet, options) {
-			assertSame(_transform(jsx, options), EXPECTED.get(snippet));
+			let actual = _transform(jsx, options);
+			assertSame(actual, EXPECTED.get(snippet));
 		},
 		transform: _transform
 	};
 }
 
-function parse(code, context) {
+export function transformCode(jsx, options, filepath) {
 	try {
-		return JSXParser.parse(code);
+		var ast = JSXParser.parse(jsx); // eslint-disable-line no-var
 	} catch(err) {
-		reportError(err, context);
+		reportError(err, filepath);
 	}
+	return transform(ast, options || undefined);
 }
