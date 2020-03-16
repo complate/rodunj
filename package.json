@@ -1,6 +1,6 @@
 {
 	"name": "rodunj",
-	"version": "0.0.0",
+	"version": "0.8.0",
 	"description": "JSX precompiler for static HTML",
 	"author": "FND",
 	"license": "Apache-2.0",
@@ -30,6 +30,7 @@
 	"devDependencies": {
 		"eslint-config-fnd-jsx": "^1.8.0",
 		"esm": "^3.2.25",
-		"mocha": "^7.1.0"
+		"mocha": "^7.1.0",
+		"release-util-fnd": "^2.0.0"
 	}
 }
