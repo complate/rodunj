@@ -1,6 +1,6 @@
 import transform from "./transform";
 import { reportError } from "./util";
-import { createFilter } from "rollup-pluginutils";
+import { createFilter } from "@rollup/pluginutils";
 
 let filter = createFilter(/\.jsx$/); // XXX: inelegant
 
