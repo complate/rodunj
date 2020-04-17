@@ -32,6 +32,52 @@ test("HTML elements", () => {
 </ul>`);
 });
 
+test("macros", () => {
+	let List = ({ entries, selected }) => [
+		{ _html: "<ul>" },
+		entries.map(id => [
+			{ _html: "<li>" },
+			id === selected.id ? [
+				{ _html: "<mark>" },
+				id,
+				{ _html: "</mark>" }
+			] : id,
+			{ _html: "</li>" }
+		]),
+		{ _html: "</ul>" }
+	];
+
+	let segments = [List({
+		entries: [123, 456],
+		selected: { id: 123 }
+	})];
+	assertSame(renderToString(...segments),
+			"<ul><li><mark>123</mark></li><li>456</li></ul>");
+});
+
+test("recursive macros", () => {
+	function Recursivitis({ depth = 0 }) {
+		if(depth === 3) {
+			return "EOR";
+		}
+		depth++;
+		return [
+			{ _html: "<div>\n\t\t" },
+			Recursivitis({ depth: depth }),
+			{ _html: "\n\t</div>" }
+		];
+	}
+
+	let segments = [Recursivitis({})];
+	assertSame(renderToString(...segments), `<div>
+		<div>
+		<div>
+		EOR
+	</div>
+	</div>
+	</div>`);
+});
+
 test("HTML attributes", () => {
 	let segments = [
 		{ _html: "<span " },

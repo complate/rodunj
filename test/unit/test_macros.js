@@ -5,26 +5,27 @@ let { assertAST } = makeSuite("macros", __filename);
 
 test("macro", () => {
 	assertAST("<Card title={title} />", "macro");
-	assertAST('<Card id={16 * 8} {...params} title="Hello World" inert />',
-			"macro with complex parameters");
+	assertAST(`<Card id={16 * 8} {...params} title="Hello World"
+			data={{ entries: [123, 456], selected: 123 }} inert />
+			`, "macro with complex parameters");
 	assertAST(`<Card>
 	<p>lipsum</p>
 </Card>`, "macro with children");
 });
 
 test("macro internals", () => {
-	// XXX: never evaluated, thus recursion isn't actually being tested here
 	assertAST(`
 function Recursivitis({ depth = 0 }) {
 	if(depth === 3) {
-		return null;
+		return "EOR";
 	}
+	depth++;
 	return <div>
 		<Recursivitis depth={depth} />
 	</div>;
 }
 
-<Recursivitis />`, "recursion");
+<Recursivitis />`, "recursivitis");
 });
 
 /* eslint-disable */
@@ -38,19 +39,27 @@ void function() { // expectations scope
 		id: 16 * 8,
 		...params,
 		title: "Hello World",
+		data: {
+			entries: [
+				123,
+				456
+			],
+			selected: 123
+		},
 		inert: true
 	})];
 
 // EXPECTED: macro with children
 [Card({}, { _html: "\n\t<p>lipsum</p>\n" })];
 
-// EXPECTED: recursion
+// EXPECTED: recursivitis
 function Recursivitis({
 	depth = 0
 }) {
 	if (depth === 3) {
-		return null;
+		return "EOR";
 	}
+	depth++;
 	return [
 		{ _html: "<div>\n\t\t" },
 		Recursivitis({ depth: depth }),

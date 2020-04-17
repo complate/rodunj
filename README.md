@@ -36,13 +36,13 @@ is converted to plain JavaScript:
 Contributing
 ------------
 
-* ensure [Node](http://nodejs.org) is installed
+* ensure [Node](https://nodejs.org) is installed
 * `npm install` downloads dependencies
 * `npm test` runs the test suite and checks code for stylistic consistency
 
 
-Releases
---------
+Release Process
+---------------
 
 NB: version numbers are incremented in accordance with
     [semantic versioning](https://semver.org)
