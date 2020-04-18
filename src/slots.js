@@ -8,7 +8,7 @@ export function Slot({ name }, ...children) {
 	};
 }
 
-export function determineSlots(children) {
+export function resolveSlots(children) {
 	let slots = {}; // poor man's `Map`
 	children = children.filter(child => {
 		let name = child[PROP];

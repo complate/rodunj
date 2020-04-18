@@ -1,5 +1,5 @@
 /* global suite, test */
-import { Slot, determineSlots } from "../../src/slots";
+import { Slot, resolveSlots } from "../../src/slots";
 import { renderToString } from "../../src/render";
 import { transformCode } from "./util";
 import vm from "vm";
@@ -10,7 +10,7 @@ suite("slots", __filename);
 test("named slots", async () => {
 	let code = `
 function Card(_, ...children) {
-	let slots = determineSlots(children);
+	let slots = resolveSlots(children);
 	return <div class="card">
 		{slots.get("header")}
 		{slots.unnamed}
@@ -33,7 +33,7 @@ function Card(_, ...children) {
 	`;
 
 	let js = transformCode(code, null, __filename);
-	let context = { Slot, determineSlots };
+	let context = { Slot, resolveSlots };
 	let segments = vm.runInNewContext(js, context);
 
 	let html = renderToString(...segments);
