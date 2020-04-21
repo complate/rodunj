@@ -15,7 +15,7 @@ export function renderHTML(stream, ...elements) {
 		}
 
 		let raw = el._html;
-		if(raw && Object.keys(el).length === 1) { // raw HTML
+		if((raw || raw === "") && Object.keys(el).length === 1) { // raw HTML
 			stream.write(raw);
 			continue;
 		}
