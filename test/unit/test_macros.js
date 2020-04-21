@@ -50,7 +50,7 @@ void function() { // expectations scope
 	})];
 
 // EXPECTED: macro with children
-[Card({}, { _html: "\n\t<p>lipsum</p>\n" })];
+[Card({}, { _html: "<p>lipsum</p>" })];
 
 // EXPECTED: recursivitis
 function Recursivitis({
@@ -61,9 +61,9 @@ function Recursivitis({
 	}
 	depth++;
 	return [
-		{ _html: "<div>\n\t\t" },
+		{ _html: "<div>" },
 		Recursivitis({ depth: depth }),
-		{ _html: "\n\t</div>" }
+		{ _html: "</div>" }
 	];
 }
 [Recursivitis({})];

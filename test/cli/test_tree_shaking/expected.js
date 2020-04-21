@@ -3,9 +3,9 @@ function Placeholder() {
 }
 
 var index = [
-	{ _html: "<div>\n\t" },
+	{ _html: "<div>" },
 	Placeholder(),
-	{ _html: "\n</div>" }
+	{ _html: "</div>" }
 ];
 
 export default index;

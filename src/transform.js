@@ -1,4 +1,5 @@
 import { htmlEncode, VOID_ELEMENTS } from "./html";
+import normalizeWhitespace from "./whitespace";
 import { $spread, $invocation, $identifier, $array, $object, $property, $literal } from "./ast";
 import { generate } from "escodegen"; // TODO: switch to https://github.com/davidbonnet/astring?
 import { walk } from "estree-walker";
@@ -128,7 +129,8 @@ function JSXFragment(state, node, parent) {
 }
 
 function JSXText(state, node, parent) {
-	let txt = htmlEncode(node.value);
+	let txt = normalizeWhitespace(node.value);
+	txt = htmlEncode(txt);
 	this.replace(raw(txt));
 }
 

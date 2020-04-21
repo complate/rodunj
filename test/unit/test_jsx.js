@@ -67,6 +67,38 @@ test("fragments", () => {
 </ul>`, "nested fragments");
 });
 
+test("whitespace", () => {
+	assertAST(`
+<>
+	<__UnsafeRaw html="<!DOCTYPE html>" />
+	<html lang={lang}>
+		<head>
+			<meta charset="utf-8" />
+			<title>{title}</title>
+		</head>
+		<body>
+			<h1>
+				{title} | My Site
+			</h1>
+			<p>lorem <b>ipsum</b> dolor <i>sit</i> amet</p>
+
+			<p>consectetur {txt} elit</p>
+			{children}
+			<ul>
+				<li>foo</li>
+				<li>bar etc.</li>
+			</ul>
+			{" "}
+			<pre>
+				10 PRINT "Hello, World!"
+				20 END
+			</pre>
+		</body>
+	</html>
+</>
+	`, "whitespace");
+});
+
 /* eslint-disable */
 void function() { // expectations scope
 
@@ -75,13 +107,13 @@ void function() { // expectations scope
 
 // EXPECTED: nested elements
 [
-	{ _html: "<article>\n\t<header " },
+	{ _html: "<article><header " },
 	{ _attribs: attribs },
-	{ _html: ">\n\t\t<h3>hello world</h3>\n\t</header>\n</article>" }
+	{ _html: "><h3>hello world</h3></header></article>" }
 ];
 
 // EXPECTED: nested self-closing tag
-[{ _html: "<section>\n\t<ul></ul>\n</section>" }];
+[{ _html: "<section><ul></ul></section>" }];
 
 // EXPECTED: parameter
 [{ _html: "<span class=\"dummy\"></span>" }];
@@ -109,13 +141,13 @@ void function() { // expectations scope
 
 // EXPECTED: scoped expression
 [
-	{ _html: "<ul>\n\t" },
+	{ _html: "<ul>" },
 	items.map(item => [
 		{ _html: "<li>" },
 		item,
 		{ _html: "</li>" }
 	]),
-	{ _html: "\n</ul>" }
+	{ _html: "</ul>" }
 ];
 
 // EXPECTED: dynamic heading level
@@ -144,6 +176,23 @@ let $List = ordered ? "ol" : "ul";
 [{ _html: "lorem ipsum" }];
 
 // EXPECTED: nested fragments
-[{ _html: "<ul>\n\t\n\t\t<li>foo</li>\n\t\t<li>bar</li>\n\t\n\t\n\t\t<li>lorem ipsum</li>\n\t\t<li>dolor <em>sit</em> amet</li>\n\t\n</ul>" }];
+[{ _html: "<ul><li>foo</li><li>bar</li><li>lorem ipsum</li><li>dolor <em>sit</em> amet</li></ul>" }];
+
+// EXPECTED: whitespace
+[
+	{ _html: "<!DOCTYPE html><html " },
+	{ _attr: { lang: lang } },
+	{ _html: "><head><meta charset=\"utf-8\"><title>" },
+	title,
+	{ _html: "</title></head><body><h1>" },
+	title,
+	{ _html: " | My Site</h1><p>lorem <b>ipsum</b> dolor <i>sit</i> amet</p><p>consectetur " },
+	txt,
+	{ _html: " elit</p>" },
+	children,
+	{ _html: "<ul><li>foo</li><li>bar etc.</li></ul>" },
+	" ",
+	{ _html: "<pre>10 PRINT \"Hello, World!\" 20 END</pre></body></html>" }
+];
 
 }

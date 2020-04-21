@@ -1,14 +1,14 @@
 function Glossary({term}, ...definitions) {
 	return [
-		{ _html: "<dl class=\"glossary\">\n\t\t<dt>" },
+		{ _html: "<dl class=\"glossary\"><dt>" },
 		term,
-		{ _html: "</dt>\n\t\t" },
+		{ _html: "</dt>" },
 		definitions.map(desc => [
 			{ _html: "<dd>" },
 			desc,
 			{ _html: "</dd>" }
 		]),
-		{ _html: "\n\t</dl>" }
+		{ _html: "</dl>" }
 	];
 }
 
@@ -18,6 +18,6 @@ function Document(_, ...children) {
 		children
 	];
 }
-var index = [Document({}, { _html: "\n\t<body>\n\t\t<h1>Hello World</h1>\n\t\t" }, Glossary({ term: "foo" }, { _html: "bar" }), { _html: "\n\t</body>\n" })];
+var index = [Document({}, { _html: "<body><h1>Hello World</h1>" }, Glossary({ term: "foo" }, { _html: "bar" }), { _html: "</body>" })];
 
 export default index;
