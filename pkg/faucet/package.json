@@ -1,0 +1,5 @@
+{
+	"dependencies": {
+		"faucet-pipeline-core": "^1.5.0"
+	}
+}

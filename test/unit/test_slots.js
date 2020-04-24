@@ -37,6 +37,6 @@ function Card(_, ...children) {
 	let segments = vm.runInNewContext(js, context);
 
 	let html = renderToString(...segments);
-	assertSame(html.replace(/\n|\t/g, ""), // eslint-disable-next-line max-len
+	assertSame(html, // eslint-disable-next-line max-len
 			'<div class="card"><h1>Hello World</h1><p>lorem ipsum dolor sit amet</p><pre>header, footer</pre><footer>…</footer></div>');
 });

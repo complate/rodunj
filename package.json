@@ -21,11 +21,7 @@
 	},
 	"dependencies": {
 		"escodegen": "^1.14.1",
-		"estree-walker": "^2.0.1",
-		"rollup": "^2.0.6",
-		"@rollup/plugin-commonjs": "^11.0.2",
-		"@rollup/plugin-node-resolve": "^7.1.1",
-		"@rollup/pluginutils": "^3.0.8"
+		"estree-walker": "^2.0.1"
 	},
 	"devDependencies": {
 		"eslint-config-fnd-jsx": "^1.8.0",
